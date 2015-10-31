@@ -1,8 +1,20 @@
-turtles-own
+; 2015
+; nesrotom@fit.cvut.cz
+; MI-MVI 1st semestral work
+; goal 1: people will walk on streets/building
+; goal 2: add doctors that will cure
+
+breed [nodes node] ; nesrotom
+breed [ppls ppl] ; nesrotom
+
+
+ppls-own
   [ sick?                ;; if true, the turtle is infectious
     remaining-immunity   ;; how many weeks of immunity the turtle has left
     sick-time            ;; how long, in weeks, the turtle has been infectious
-    age ]                ;; how many weeks old the turtle is
+    age                  ;; how many weeks old the turtle is
+    location
+    doctor?]           ;; nesrotom
 
 globals
   [ %infected            ;; what % of the population is infectious
@@ -16,7 +28,8 @@ globals
 to setup
   clear-all
   setup-constants
-  setup-turtles
+  setup-surface ; nesrotom
+  setup-ppls
   update-global-variables
   update-display
   reset-ticks
@@ -24,16 +37,25 @@ end
 
 ;; We create a variable number of turtles of which 10 are infectious,
 ;; and distribute them randomly
-to setup-turtles
-  create-turtles number-people
-    [ setxy random-xcor random-ycor
+to setup-ppls
+  create-ppls number-people
+    [ set location one-of nodes ; nesrotom
+      move-to location ; nesrotom
       set age random lifespan
       set sick-time 0
       set remaining-immunity 0
-      set size 1.5  ;; easier to see
-      get-healthy ]
-  ask n-of 10 turtles
+      set size 0.8;1.5  ;; easier to see
+      get-healthy
+      set doctor? false ]
+  ask n-of 10 ppls
     [ get-sick ]
+
+  ask n-of number-doctors ppls
+    [ is-doctor ]
+end
+
+to is-doctor
+  set doctor? true
 end
 
 to get-sick ;; turtle procedure
@@ -61,8 +83,25 @@ to setup-constants
   set immunity-duration 52
 end
 
+to setup-surface ; nesrotom
+  set-default-shape nodes "square"
+  ask patches with [
+    (pxcor >= 1 and pxcor <= 6 and pycor >= 1 and pycor <= 6) or
+    (pxcor >= 8 and pxcor <= 15 and pycor >= 8 and pycor <= 15) or
+    (pxcor >= 18 and pxcor <= 28 and pycor >= 8 and pycor <= 15) or
+    (pxcor >= 15 and pxcor <= 18 and pycor >= 10 and pycor <= 10) or
+    (pxcor >= 5 and pxcor <= 25 and pycor >= 20 and pycor <= 30) or
+    (pxcor >= 5 and pxcor <= 5 and pycor >= 5 and pycor <= 30) or
+    (pxcor >= 14 and pxcor <= 14 and pycor >= 10 and pycor <= 30) or
+    (pxcor >= 22 and pxcor <= 22 and pycor >= 10 and pycor <= 30) or
+    (pxcor >= 4 and pxcor <= 9 and pycor >= 5 and pycor <= 5) or
+    (pxcor >= 9 and pxcor <= 9 and pycor >= 6 and pycor <= 7) ]
+  [ sprout-nodes 1 [ set color blue ] ]
+  ask nodes [ create-links-with nodes-on patches at-points [[-1 1][1 -1][-1 -1][-1 0][0 -1][0 1][1 0][1 1]]]
+end
+
 to go
-  ask turtles [
+  ask ppls [
     get-older
     move
     if sick? [ recover-or-die ]
@@ -74,15 +113,17 @@ to go
 end
 
 to update-global-variables
-  if count turtles > 0
-    [ set %infected (count turtles with [ sick? ] / count turtles) * 100
-      set %immune (count turtles with [ immune? ] / count turtles) * 100 ]
+  if count ppls > 0
+    [ set %infected (count ppls with [ sick? ] / count turtles) * 100
+      set %immune (count ppls with [ immune? ] / count turtles) * 100 ]
 end
 
 to update-display
-  ask turtles
+  ask ppls
     [ if shape != turtle-shape [ set shape turtle-shape ]
-      set color ifelse-value sick? [ red ] [ ifelse-value immune? [ grey ] [ green ] ] ]
+      set color ifelse-value sick? [ red ] [ ifelse-value immune? [ grey ] [ green ] ]
+      if doctor? [  set color yellow ]
+    ]
 end
 
 ;;Turtle counting variables are advanced.
@@ -93,21 +134,42 @@ to get-older ;; turtle procedure
   if age > lifespan [ die ]
   if immune? [ set remaining-immunity remaining-immunity - 1 ]
   if sick? [ set sick-time sick-time + 1 ]
+  if random-float 10000 < 0.1 [ set doctor? true ]
 end
+
+to set-location [new-location]  ;; walker procedure
+  set location new-location
+  face new-location  ;; not strictly necessary, but improves the visuals a bit
+  move-to new-location
+end
+
 
 ;; Turtles move about at random.
 to move ;; turtle procedure
-  rt random 100
-  lt random 100
-  fd 1
+
+  ; nesrotom
+ set-location one-of [link-neighbors] of location
+
+  ; nesrotom
+
+;  rt random 100
+;  lt random 100
+;  fd 1
 end
 
 ;; If a turtle is sick, it infects other turtles on the same patch.
 ;; Immune turtles don't get sick.
 to infect ;; turtle procedure
-  ask other turtles-here with [ not sick? and not immune? ]
+  ask other ppls-here with [ not sick? and not immune? ]
     [ if random-float 100 < infectiousness
       [ get-sick ] ]
+end
+
+to cure ; nesrotom ------------------------------------------------------------------------------------
+  ask other ppls-here with [ sick? ]
+    [ if random-float 100 < infectiousness
+      [ set sick? false
+        set remaining-immunity immunity-duration ] ]
 end
 
 ;; Once the turtle has been sick long enough, it
@@ -122,7 +184,7 @@ end
 ;; If there are less turtles than the carrying-capacity
 ;; then turtles can reproduce.
 to reproduce
-  if count turtles < carrying-capacity and random-float 100 < chance-reproduce
+  if count ppls < carrying-capacity and random-float 100 < chance-reproduce
     [ hatch 1
       [ set age 1
         lt 45 fd 1
@@ -146,8 +208,8 @@ GRAPHICS-WINDOW
 10
 780
 531
-17
-17
+-1
+-1
 14.0
 1
 10
@@ -158,10 +220,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--17
-17
--17
-17
+0
+34
+0
+34
 1
 1
 1
@@ -192,7 +254,7 @@ chance-recover
 chance-recover
 0.0
 99.0
-75
+70
 1.0
 1
 %
@@ -207,7 +269,7 @@ infectiousness
 infectiousness
 0.0
 99.0
-65
+80
 1.0
 1
 %
@@ -263,10 +325,11 @@ true
 true
 "" ""
 PENS
-"sick" 1.0 0 -2674135 true "" "plot count turtles with [ sick? ]"
-"immune" 1.0 0 -7500403 true "" "plot count turtles with [ immune? ]"
-"healthy" 1.0 0 -10899396 true "" "plot count turtles with [ not sick? and not immune? ]"
-"total" 1.0 0 -13345367 true "" "plot count turtles"
+"sick" 1.0 0 -2674135 true "" "plot count ppls with [ sick? ]"
+"immune" 1.0 0 -7500403 true "" "plot count ppls with [ immune? ]"
+"healthy" 1.0 0 -10899396 true "" "plot count ppls with [ not sick? and not immune? ]"
+"total" 1.0 0 -13345367 true "" "plot count ppls"
+"doctors" 1.0 0 -1184463 true "" "plot count ppls with [ doctor? ]"
 
 SLIDER
 40
@@ -277,7 +340,7 @@ number-people
 number-people
 10
 carrying-capacity
-150
+99
 1
 1
 NIL
@@ -324,7 +387,22 @@ CHOOSER
 turtle-shape
 turtle-shape
 "person" "circle"
+1
+
+SLIDER
+45
+260
+217
+293
+number-doctors
+number-doctors
 0
+100
+5
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
