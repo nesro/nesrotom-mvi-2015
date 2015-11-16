@@ -7,7 +7,6 @@
 breed [nodes node] ; nesrotom
 breed [ppls ppl] ; nesrotom
 
-
 ppls-own
   [ sick?                ;; if true, the turtle is infectious
     remaining-immunity   ;; how many weeks of immunity the turtle has left
@@ -405,6 +404,26 @@ NIL
 HORIZONTAL
 
 @#$#@#$#@
+## nesrotom reseni
+
+video z 31. 10. 2015 (jeste verze bez toho ze by se lidi ucili doktorem) https://www.youtube.com/watch?v=sOraoM2UoUg
+
+Pridal jsem doktory[1] a to, ze lide mohou chodit pouze po chodnicich[2].
+
+[1] Je mala sance, ze se clovek stane doktorem. V tom pripade leci lidi kolem nej.
+
+[2] Pouzil jsem metodu z jineho examplu. Chodnik jsou dalsi sheep co maji sousedy.
+Je tam maly bug, ze clovek muze o 1 pole mimo chodnik, ale pak se zase vrati zpatky.
+Protoze to nijak nanarusuje funkcnost, rozhodl jsem se to tak nechat.
+Bylo potreba prepsat znacnou cast Virus kodu, protoze ten pouzival oznaceni vsech
+sheep, takze jsem musel vytvorit sheep pro cloveka.
+
+## nesrotom zaver
+
+Pri pouziti mistnosti je videt, jak kdyz nakazeny clovek prijde do mistnosti, tak ji nakazi. Timto podle me dochazi k mnohem realnejsi simulaci, protoze se casto schazime
+s nejakou skupinou lidi po delsi dobu, kdy nam hrozi vetsi nakazeni (nez kdyz treba
+nekoho potkame na chvilku v mdh)
+
 ## WHAT IS IT?
 
 This model simulates the transmission and perpetuation of a virus in a human population.
