@@ -404,9 +404,20 @@ NIL
 HORIZONTAL
 
 @#$#@#$#@
-## nesrotom reseni
+## nesrotom
 
-video z 31. 10. 2015 (jeste verze bez toho ze by se lidi ucili doktorem) https://www.youtube.com/watch?v=sOraoM2UoUg
+video z 31. 10. 2015 (jeste verze bez toho ze by se lidi ucili doktorem)
+https://www.youtube.com/watch?v=sOraoM2UoUg
+
+github repozitar (zatim je private)
+https://github.com/nesro/nesrotom-mvi-2015/
+
+## nesrotom zadani
+
+1) lidi budou chodit po chodnicich a do budov
+2) doktori budou lecit
+
+## nesrotom reseni
 
 Pridal jsem doktory[1] a to, ze lide mohou chodit pouze po chodnicich[2].
 
