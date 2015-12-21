@@ -409,7 +409,7 @@ HORIZONTAL
 video z 31. 10. 2015 (jeste verze bez toho ze by se lidi ucili doktorem)
 https://www.youtube.com/watch?v=sOraoM2UoUg
 
-github repozitar (zatim je private)
+github repozitar
 https://github.com/nesro/nesrotom-mvi-2015/
 
 ## nesrotom zadani
