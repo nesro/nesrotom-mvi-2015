@@ -20,10 +20,6 @@
 
 ; ---------- -------- --------- --------- --------- --------- ---------
 
-; todo: nacitani nepratel, cleanup
-
-extensions [array]
-
 turtles-own [
   chromosome
   m_life      ; max life
@@ -48,8 +44,6 @@ globals [
   g_chlen ; length of a chromosome
 ];
 
-
-
 to make-hero [ i ]
   set m_ypos ( 3 * (i + 1))
 
@@ -73,11 +67,11 @@ to setup
 
   ; global variables
   set g_best_fitness 0
-  set g_heroes_cnt 6
+  set g_heroes_cnt 2
   set g_enemies_cnt enemies_cnt
   set g_population_cnt 16
   set g_patch_size 13
-  set g_chlen 8
+  set g_chlen 12
 
   ; create random chromosome for each population
   set g_ch n-values g_population_cnt [ n-values (g_enemies_cnt * g_chlen) [ random 2 ] ]
@@ -209,14 +203,11 @@ to-report fitness [ ch ]
   let fitness_val 1
 
   clear-turtles
-
-  ; create heroes
   setup-make-heroes
   setup-make-enemies ch
   pause
 
   loop [
-
     ; each enemy attacks a hero
     set j 0
     ;while [j < g_enemies_cnt] [
@@ -290,7 +281,7 @@ to-report fitness [ ch ]
         pause
       ]
 
-      set j (j + 1)
+      ;set j (j + 1)
       pause
     ]
 
@@ -304,17 +295,33 @@ to-report fitness [ ch ]
 
   ] ; loop
 
+  ask heroes [
+    set fitness_val (fitness_val + (m_life - m_remaining))
+  ]
+
   ;clear-turtles
   report fitness_val
 end ; to-report fitness [ ch ]
 
 ; chromosome: ((3b dmg) (3b life)*g_enemies_cnt
 to-report ch2dmg [ ch i ]
-  report 1 + 8 * (item ((i * g_chlen) + 0) ch) + 4 * (item ((i * g_chlen) + 1) ch) + 2 * (item ((i * g_chlen) + 2) ch) + (item ((i * g_chlen) + 3) ch)
+  report 1 +
+    32 * (item ((i * g_chlen) +  5) ch) +
+    16 * (item ((i * g_chlen) +  4) ch) +
+     8 * (item ((i * g_chlen) +  3) ch) +
+     4 * (item ((i * g_chlen) +  2) ch) +
+     2 * (item ((i * g_chlen) +  1) ch) +
+     1 * (item ((i * g_chlen) +  0) ch)
 end
 
 to-report ch2life [ ch i ]
-  report 1 + 8 * (item ((i * g_chlen) + 4) ch) + 4 * (item ((i * g_chlen) + 5) ch) + 2 * (item ((i * g_chlen) + 6) ch) + (item ((i * g_chlen) + 7) ch)
+    report 1 +
+    32 * (item ((i * g_chlen) + 11) ch) +
+    16 * (item ((i * g_chlen) + 10) ch) +
+     8 * (item ((i * g_chlen) +  9) ch) +
+     4 * (item ((i * g_chlen) +  8) ch) +
+     2 * (item ((i * g_chlen) +  7) ch) +
+     1 * (item ((i * g_chlen) +  6) ch)
 end
 
 to-report h2dmg [ i ]
@@ -323,7 +330,7 @@ end
 
 to pause
   ;let i 0
-  ;while [ i < 100000] [ set i i + 1]
+  ;while [ i < 100] [ set i i + 1]
 end
 
 to setupgo
@@ -333,6 +340,12 @@ end
 
 to print_best_chromosome
   print g_best_chromosome
+  let k 0
+  while [ k < g_enemies_cnt ] [
+    type "enemy=" type k type ", dmg=" type (ch2dmg g_best_chromosome k) type ", life=" print (ch2life g_best_chromosome k)
+    set k k + 1
+  ]
+
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -388,7 +401,7 @@ enemies_cnt
 enemies_cnt
 0
 100
-7
+4
 1
 1
 NIL
@@ -437,7 +450,7 @@ hero_dmg
 hero_dmg
 0
 100
-5
+30
 1
 1
 NIL
@@ -452,7 +465,7 @@ hero_life
 hero_life
 0
 100
-28
+100
 1
 1
 NIL
@@ -506,10 +519,10 @@ PENS
 "pen-1" 1.0 0 -7500403 true "" ""
 
 BUTTON
-281
-512
-485
-545
+1
+273
+205
+306
 NIL
 print_best_chromosome\n
 NIL
@@ -522,42 +535,34 @@ NIL
 NIL
 1
 
+TEXTBOX
+227
+481
+639
+636
+Fitness is how many attacks were perfomed in the battle and how little life remain. If any hero dies, the fitness is 0, since this is unaceptable.\nThe chromosome is a binary list with life and damage for every enemy ((6 bits for life + 6 bits for damage) * enemies_cnt).
+12
+0.0
+1
+
 @#$#@#$#@
+# 2015
+# nesrotom@fit.cvut.cz
+# MI-MVI 2nd semestral work
+# Tomas Nesrovnal
+
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
+Simulace souboje a hledani vhodneho nastaveni nepratel pomoci GA.
 
 ## HOW IT WORKS
 
-(what rules the agents use to create the overall behavior of the model)
+Je nahodne vygenerovan chromosom, ktery pro kazdeho nepritele urci jeho zivot a zraneni. Fitness funkce znazornuje delku boje a kolik zivotu hrdinove ztratili.
 
 ## HOW TO USE IT
 
-(how to use the model, including a description of each of the items in the Interface tab)
-
-## THINGS TO NOTICE
-
-(suggested things for the user to notice while running the model)
-
-## THINGS TO TRY
-
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
-
-## EXTENDING THE MODEL
-
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
-
-## NETLOGO FEATURES
-
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
-
-## RELATED MODELS
-
-(models in the NetLogo Models Library and elsewhere which are of related interest)
-
-## CREDITS AND REFERENCES
-
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+Setup nastavi, go spusti jednen cyklus vypoctu fitness, krizeni a mutace.
+Vysledek lze zobrazit tlacitkem print_best_chromosome
 @#$#@#$#@
 default
 true
