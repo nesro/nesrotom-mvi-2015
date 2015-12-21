@@ -43,49 +43,47 @@ globals [
   g_e  ; list of enemies
   g_ch ; list of chromosomes
   g_fn ; list of fitnesses
+  g_best_fitness
+  g_best_chromosome
+  g_chlen ; length of a chromosome
 ];
 
 
 
 to make-hero [ i ]
-  set m_ypos ( 6 * (i + 1))
-;  set m_ypos ypos
-
+  set m_ypos ( 3 * (i + 1))
 
   setxy 2 m_ypos
-  set m_remaining 40
+  set m_remaining hero_life
 
   set shape "person"
-  set size 2
+  set size 3
   set color gray
 
   set label (round m_remaining)
-  set label-color green
+  set label-color red
 end
 
 ; SETUP
 
 to setup
   clear-all
-  print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+  ;print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+  ;print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 
   ; global variables
-  set g_heroes_cnt 2
+  set g_best_fitness 0
+  set g_heroes_cnt 6
   set g_enemies_cnt enemies_cnt
-  set g_population_cnt 2
+  set g_population_cnt 16
   set g_patch_size 13
+  set g_chlen 8
 
-  set g_ch n-values g_population_cnt [ n-values (g_enemies_cnt * 6) [ random 2 ] ] print g_ch
+  ; create random chromosome for each population
+  set g_ch n-values g_population_cnt [ n-values (g_enemies_cnt * g_chlen) [ random 2 ] ]
+  ;print g_ch
 
   ask patches [set pcolor white]
-
-  ;setup-make-heroes
-  ;set g_h [ ]
-  ;ask heroes [ set g_h lput self g_h ]
-
-  ;setup-make-enemies
-  ;set g_e [ ]
-  ;ask enemies  [ set g_e lput self g_e ]
 end
 
 
@@ -102,8 +100,6 @@ end
 to make-enemy [ ch i ]
   set m_ypos ( (round (32 / g_enemies_cnt - 1)) * (i + 1))
   setxy 30 m_ypos
-  type "ch2life=" print (ch2life ch i)
-
   set m_remaining (ch2life ch i)
   set m_life m_remaining
 
@@ -123,13 +119,87 @@ to setup-make-enemies [ ch ]
 end
 
 to go
+
+  ; create an array of fitnesses
+  let fitnesses [ ]
   let i 0
   while [i < g_population_cnt] [
-    type (fitness (item 0 g_ch))
-    type " was the fitness of "
-    print i
+    let f (fitness (item i g_ch))
+    ;type i type " gen has fitness " print f
+    ; generation fitness chromosome
+    set fitnesses lput (list i f (item i g_ch)) fitnesses
     set i (i + 1)
   ]
+  ;print fitnesses
+
+
+  let sorted_fit sort-by [ (item 1 ?1) > (item 1 ?2) ] fitnesses
+  let best_fit sublist sorted_fit 0 ((g_population_cnt / 2))
+  let worst_fit sublist sorted_fit (g_population_cnt / 2) (g_population_cnt - 1)
+  ;type "sorted_fit " print sorted_fit
+  ;type "best_fit " print best_fit
+  ;type "best_fit len " print length best_fit
+  ;type "worst_fit " print worst_fit
+
+  if (item 1 (item 0 sorted_fit)) > g_best_fitness [
+    set g_best_fitness (item 1 (item 0 sorted_fit))
+    set g_best_chromosome (item 2 (item 0 sorted_fit))
+  ]
+
+  plot g_best_fitness
+
+  ;type "best fitness " print (item 1 (item 0 sorted_fit))
+
+  let half_cnt (g_population_cnt / 4)
+  let half0best sublist best_fit 0 half_cnt
+  let half1best sublist best_fit half_cnt ((g_population_cnt / 2))
+
+  ;print (length half0best)
+  ;print (length half1best)
+
+  ; create new chromose array
+  set g_ch []
+  let k 0
+  while [ k < (g_population_cnt / 2) ] [
+    set g_ch lput (item 2 (item k best_fit)) g_ch
+    set k k + 1
+  ]
+  ;type "added " print (length g_ch)
+
+  ;(foreach best_fit worst_fit [
+  (foreach half0best half1best [
+      ;print "foreach"
+      ;print ?1
+      ;print ?2
+
+      let new-chromosome cross (item 2 ?1) (item 2 ?2)
+      let a item 0 new-chromosome
+      let b item 1 new-chromosome
+
+      if random 10 < 1 [ set a (mutate a)]
+      if random 10 < 1 [ set b (mutate b)]
+
+      set g_ch lput a g_ch
+      set g_ch lput b g_ch
+  ])
+
+  ;print "g_ch:"
+  ;print g_ch
+  ;print length g_ch
+end
+
+; and return a pair of new chromosomes: [c1 c2]
+to-report cross [ a b ]
+  let n length a
+  let x (random (n - 1)) + 1
+  let c1 sentence (sublist a 0 x) (sublist b x n)
+  let c2 sentence (sublist b x n) (sublist a 0 x)
+  report (list c1 c2)
+end
+
+to-report mutate [ ch ]
+  let k random length ch
+  report (replace-item k ch (1 - (item k ch)))
 end
 
 ; tady se provede simulace boje a urci se fitness neprate
@@ -143,13 +213,14 @@ to-report fitness [ ch ]
   ; create heroes
   setup-make-heroes
   setup-make-enemies ch
+  pause
 
   loop [
 
     ; each enemy attacks a hero
     set j 0
     ;while [j < g_enemies_cnt] [
-    print "---- ask enemies"
+    ;print "---- ask enemies"
     ask enemies [
       ;type "enemy=" print j
       ;type "enemy dmg=" print ch2dmg ch j
@@ -166,6 +237,9 @@ to-report fitness [ ch ]
         set m_remaining (m_remaining - ch2dmg ch j)
         ;type "ouch!" print who
         set label m_remaining
+
+        ; inc fitness for each attack from enemy
+        set fitness_val (fitness_val + 1)
 
         create-link-from (enemy ewho)
         pause
@@ -196,17 +270,21 @@ to-report fitness [ ch ]
       ;dup
       let anyone-alive3 one-of enemies with [m_remaining > 0]
       if anyone-alive3 = nobody  [
-        print "ask heroes: no more alive monster"
+        ;print "ask heroes: no more alive monster"
         stop
       ]
 
       let hwho who
       ask one-of enemies with [m_remaining > 0] [
-        type "hero is attacking " print who
         set m_remaining (m_remaining - h2dmg j)
-        type "boom!" print who
-        type "ask heroes, setting " type who type " to " print m_remaining
         set label m_remaining
+
+        ; inc fitness for each attack from hero
+        set fitness_val (fitness_val + 1)
+
+        ;type "hero is attacking " print who
+        ;type "boom!" print who
+        ;type "ask heroes, setting " type who type " to " print m_remaining
 
         create-link-from (hero hwho)
         pause
@@ -219,11 +297,11 @@ to-report fitness [ ch ]
     ;dup
     let anyone-alive3 one-of enemies with [m_remaining > 0]
     if anyone-alive3 = nobody  [
-      print "no enemy alive!"
+      ;print "no enemy alive!"
       report fitness_val
     ]
 
-    set fitness_val (fitness_val + 1)
+
   ] ; loop
 
   ;clear-turtles
@@ -232,28 +310,30 @@ end ; to-report fitness [ ch ]
 
 ; chromosome: ((3b dmg) (3b life)*g_enemies_cnt
 to-report ch2dmg [ ch i ]
-  report 4 * (item ((i * g_enemies_cnt) + 0) ch) + 2 * (item ((i * g_enemies_cnt) + 1) ch) + (item ((i * g_enemies_cnt) + 2) ch)
+  report 1 + 8 * (item ((i * g_chlen) + 0) ch) + 4 * (item ((i * g_chlen) + 1) ch) + 2 * (item ((i * g_chlen) + 2) ch) + (item ((i * g_chlen) + 3) ch)
 end
 
 to-report ch2life [ ch i ]
-  report 1 + 4 * (item ((i * g_enemies_cnt) + 3) ch) + 2 * (item ((i * g_enemies_cnt) + 4) ch) + (item ((i * g_enemies_cnt) + 5) ch)
+  report 1 + 8 * (item ((i * g_chlen) + 4) ch) + 4 * (item ((i * g_chlen) + 5) ch) + 2 * (item ((i * g_chlen) + 6) ch) + (item ((i * g_chlen) + 7) ch)
 end
 
 to-report h2dmg [ i ]
-  report 1
+  report hero_dmg
 end
 
 to pause
-  let i 0
-  while [ i < 1000000] [ set i i + 1]
+  ;let i 0
+  ;while [ i < 100000] [ set i i + 1]
 end
 
-  ; tady bude smycka, ktera vykona cely souboj, pokud overall vyhrajou
-  ; hrdinove, nepratele posili, jinak zeslabi.
-  ; bude se moc nastaviv vliv nahody? - ne, budeme pocitat stredni hodnotu hodu
-  ; kazdy nepritel si vybere jednoho hrdinu na ktereho zautoci
-  ; kazdy hrdina si vybere jednoho nepritele na ktereho zautoci
+to setupgo
+  setup
+  go
+end
 
+to print_best_chromosome
+  print g_best_chromosome
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -308,17 +388,17 @@ enemies_cnt
 enemies_cnt
 0
 100
-3
+7
 1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-23
-340
-86
-373
+103
+46
+166
+79
 NIL
 go\n
 NIL
@@ -332,13 +412,107 @@ NIL
 1
 
 BUTTON
-92
-340
-155
-373
+30
+230
+93
+263
 NIL
 go
 T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SLIDER
+18
+144
+190
+177
+hero_dmg
+hero_dmg
+0
+100
+5
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+18
+186
+190
+219
+hero_life
+hero_life
+0
+100
+28
+1
+1
+NIL
+HORIZONTAL
+
+BUTTON
+32
+313
+124
+346
+NIL
+setupgo
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+MONITOR
+49
+368
+158
+413
+NIL
+g_best_fitness
+17
+1
+11
+
+PLOT
+16
+418
+216
+568
+plot g_best_fitness
+NIL
+plot g_best_fitness
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot g_best_fitness"
+"pen-1" 1.0 0 -7500403 true "" ""
+
+BUTTON
+281
+512
+485
+545
+NIL
+print_best_chromosome\n
+NIL
 1
 T
 OBSERVER
